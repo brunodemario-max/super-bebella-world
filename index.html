@@ -1,92 +1,71 @@
-<!doctype html>
-<html lang="pt-BR"><head>
+<!doctype html><html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#12182b"><title>Super Bebella World V2</title>
+<meta name="theme-color" content="#0b1028"><title>Super Bebella World V3</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#12182b;font-family:monospace;touch-action:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1028;font-family:monospace;touch-action:none}
 canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
-#rotate{display:none;position:fixed;inset:0;z-index:50;background:#12182b;color:#fff;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:bold;padding:30px}
-#rotate b{font-size:55px;display:block}.controls{position:fixed;inset:0;z-index:20;pointer-events:none}
-.btn{pointer-events:auto;position:absolute;bottom:max(18px,env(safe-area-inset-bottom));width:76px;height:76px;border:3px solid #fff9;border-radius:22px;background:#15213dbb;color:#fff;font-size:34px;font-weight:bold;box-shadow:0 4px 0 #0005}
-#L{left:max(20px,env(safe-area-inset-left))}#R{left:max(110px,calc(env(safe-area-inset-left) + 90px))}
-#J{right:max(24px,env(safe-area-inset-right));width:92px;height:92px;border-radius:50%;background:#ed4f9ecc}
-#sound{position:fixed;z-index:25;right:max(16px,env(safe-area-inset-right));top:max(12px,env(safe-area-inset-top));border:2px solid #fff8;border-radius:13px;background:#1119;color:#fff;font-size:22px;padding:8px 11px}
-@media(orientation:portrait){#rotate{display:flex}.controls,#sound{display:none}}
-</style></head><body>
-<canvas id="g" width="960" height="540"></canvas>
-<div id="rotate"><div><b>📱↻</b>Vire o celular para jogar<br>SUPER BEBELLA WORLD 🎀</div></div>
-<button id="sound">🔊</button><div class="controls"><button class="btn" id="L">◀</button><button class="btn" id="R">▶</button><button class="btn" id="J">▲</button></div>
+#rot{display:none;position:fixed;inset:0;z-index:60;background:#10162d;color:white;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:bold}#rot b{display:block;font-size:55px}
+.ctrl{position:fixed;inset:0;z-index:20;pointer-events:none}.b{pointer-events:auto;position:absolute;bottom:max(18px,env(safe-area-inset-bottom));border:3px solid #fff9;background:#17213dbb;color:#fff;font-weight:bold;box-shadow:0 4px #0005}
+#L,#R{width:76px;height:76px;border-radius:22px;font-size:34px}#L{left:max(20px,env(safe-area-inset-left))}#R{left:max(110px,calc(env(safe-area-inset-left) + 90px))}
+#J,#F{width:86px;height:86px;border-radius:50%;font-size:29px}#J{right:max(22px,env(safe-area-inset-right));background:#ed4f9ecc}#F{right:max(120px,calc(env(safe-area-inset-right) + 98px));background:#7657e6cc}
+#snd{position:fixed;z-index:25;right:max(15px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));border:2px solid #fff8;border-radius:12px;background:#111a;color:#fff;font-size:21px;padding:8px}
+@media(orientation:portrait){#rot{display:flex}.ctrl,#snd{display:none}}
+</style></head><body><canvas id="c" width="960" height="540"></canvas><div id="rot"><div><b>📱↻</b>Vire o celular para jogar<br>SUPER BEBELLA WORLD 🎀</div></div>
+<button id="snd">🔊</button><div class="ctrl"><button class="b" id="L">◀</button><button class="b" id="R">▶</button><button class="b" id="F">✦</button><button class="b" id="J">▲</button></div>
 <script>
-const C=document.getElementById('g'),X=C.getContext('2d');X.imageSmoothingEnabled=false;
-const W=960,H=540,WORLD=7200;let k={L:0,R:0,J:0},score=0,lives=3,cam=0,state='intro',inv=90,checkpoint=90,soundOn=true,audio=null,musicTimer=null;
-let p={x:90,y:400,w:30,h:48,vx:0,vy:0,on:0,face:1,step:0};
-const plats=[[-100,470,720,90],[700,470,650,90],[1430,470,500,90],[2020,470,800,90],[2910,470,540,90],[3540,470,850,90],[4480,470,600,90],[5180,470,760,90],[6040,470,1250,90],
-[320,380,150,20],[790,355,150,20],[1040,300,120,20],[1500,370,170,20],[1760,305,120,20],[2150,365,150,20],[2440,300,130,20],[3020,360,160,20],[3300,295,130,20],[3660,370,170,20],[3990,310,130,20],[4580,355,160,20],[4900,285,130,20],[5300,365,170,20],[5630,305,140,20],[6160,360,170,20],[6510,290,140,20]];
-const coinP=[[370,340],[840,315],[1080,260],[1550,330],[1800,265],[2200,325],[2480,260],[3070,320],[3340,255],[3710,330],[4030,270],[4630,315],[4940,245],[5350,325],[5680,265],[6210,320],[6550,250],[6800,425]];
-let coins=[],enemies=[],stars=[];
-function objects(){coins=coinP.map(a=>({x:a[0],y:a[1],got:0}));stars=[{x:2740,y:420,got:0},{x:4350,y:420,got:0},{x:5900,y:420,got:0}];enemies=[
-{x:760,y:436,min:720,max:1000,d:1,dead:0},{x:1200,y:436,min:1100,max:1320,d:-1,dead:0},{x:2070,y:436,min:2050,max:2400,d:1,dead:0},{x:3000,y:436,min:2960,max:3300,d:-1,dead:0},{x:3600,y:436,min:3580,max:4000,d:1,dead:0},{x:4550,y:436,min:4520,max:4850,d:-1,dead:0},{x:5250,y:436,min:5220,max:5600,d:1,dead:0},{x:6120,y:436,min:6080,max:6500,d:-1,dead:0}]}
-objects();
-function A(){if(!audio)audio=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume()}
-function tone(f,d=.08,v=.04,type='square'){if(!soundOn)return;A();let o=audio.createOscillator(),q=audio.createGain();o.type=type;o.frequency.value=f;q.gain.value=v;o.connect(q);q.connect(audio.destination);o.start();q.gain.exponentialRampToValueAtTime(.001,audio.currentTime+d);o.stop(audio.currentTime+d)}
-function music(){if(musicTimer)return;let notes=[262,330,392,523,392,330,294,349,440,587,440,349],i=0;musicTimer=setInterval(()=>{if(soundOn&&state==='play')tone(notes[i++%notes.length],.14,.018,'square')},180)}
-function startAudio(){A();music()}
-document.getElementById('sound').onclick=e=>{e.stopPropagation();soundOn=!soundOn;document.getElementById('sound').textContent=soundOn?'🔊':'🔇';if(soundOn)startAudio()};
-function btn(id,n){let b=document.getElementById(id);b.onpointerdown=e=>{e.preventDefault();startAudio();k[n]=1;b.setPointerCapture?.(e.pointerId)};b.onpointerup=b.onpointercancel=e=>{e.preventDefault();k[n]=0}}btn('L','L');btn('R','R');btn('J','J');
-onkeydown=e=>{if(e.key==='ArrowLeft')k.L=1;if(e.key==='ArrowRight')k.R=1;if(e.key==='ArrowUp'||e.key===' ')k.J=1};onkeyup=e=>{if(e.key==='ArrowLeft')k.L=0;if(e.key==='ArrowRight')k.R=0;if(e.key==='ArrowUp'||e.key===' ')k.J=0};
-C.onpointerdown=()=>{startAudio();if(state==='intro')state='play';else if(state==='over'||state==='win')restart()};
+const c=document.querySelector('#c'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const W=960,H=540;
+let key={L:0,R:0,J:0,F:0},level=Math.max(1,Math.min(2,+localStorage.getItem('bebellaLevel')||1)),score=+localStorage.getItem('bebellaScore')||0,lives=3,state='intro',cam=0,inv=90,shotCD=0,soundOn=true,ac=null,musicStarted=false,nextNote=0,noteI=0;
+let p={x:90,y:400,w:30,h:48,vx:0,vy:0,on:0,face:1,step:0},coins=[],enemies=[],shots=[],fireballs=[],stars=[],plats=[],WORLD=6000,finish=5800,checkpoint=90;
+const melodies=[[262,330,392,523,392,330,294,349,440,587,440,349],[220,262,330,392,330,294,247,294,370,440,370,294]];
+function audio(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();musicStarted=true}
+function tone(f,d=.08,v=.035,type='square'){if(!soundOn)return;audio();let o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
+function musicTick(t){if(!soundOn||!musicStarted||state!=='play'||!ac)return;if(t>=nextNote){tone(melodies[level-1][noteI++%melodies[level-1].length],.16,.025,level===2?'triangle':'square');nextNote=t+.19}}
+document.querySelector('#snd').onclick=e=>{e.stopPropagation();audio();soundOn=!soundOn;e.currentTarget.textContent=soundOn?'🔊':'🔇';if(soundOn){musicStarted=true;nextNote=0}};
+function bind(id,n){let b=document.querySelector(id);b.onpointerdown=e=>{e.preventDefault();audio();key[n]=1;b.setPointerCapture?.(e.pointerId)};b.onpointerup=b.onpointercancel=e=>{e.preventDefault();key[n]=0}}bind('#L','L');bind('#R','R');bind('#J','J');bind('#F','F');
+onkeydown=e=>{if(e.key==='ArrowLeft')key.L=1;if(e.key==='ArrowRight')key.R=1;if(e.key==='ArrowUp'||e.key===' ')key.J=1;if(e.key==='x'||e.key==='X')key.F=1};onkeyup=e=>{if(e.key==='ArrowLeft')key.L=0;if(e.key==='ArrowRight')key.R=0;if(e.key==='ArrowUp'||e.key===' ')key.J=0;if(e.key==='x'||e.key==='X')key.F=0};
+c.onpointerdown=()=>{audio();if(state==='intro')state='play';else if(state==='over')restartLevel();else if(state==='win'){if(level===1){level=2;localStorage.setItem('bebellaLevel','2');setup();state='intro'}else{localStorage.setItem('bebellaLevel','1');localStorage.setItem('bebellaScore','0');level=1;score=0;setup();state='intro'}}};
 function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
-function spawn(){p.x=checkpoint;p.y=400;p.vx=p.vy=0;inv=100}
-function lose(){if(inv||state!=='play')return;lives--;tone(110,.3,.06,'sawtooth');if(lives<=0){lives=0;state='over'}else spawn()}
-function restart(){score=0;lives=3;cam=0;checkpoint=90;objects();spawn();state='play'}
+function setup(){
+cam=0;lives=3;inv=100;shots=[];fireballs=[];checkpoint=90;p.x=90;p.y=400;p.vx=p.vy=0;
+if(level===1){WORLD=6100;finish=5900;plats=[[-100,470,700,90],[680,470,700,90],[1460,470,650,90],[2200,470,800,90],[3090,470,700,90],[3880,470,850,90],[4820,470,1350,90],[350,380,150,20],[850,330,140,20],[1600,365,160,20],[2450,315,140,20],[3250,360,160,20],[4100,300,140,20],[5100,355,160,20]];
+}else{WORLD=7600;finish=7380;plats=[[-100,470,620,90],[610,470,580,90],[1290,470,700,90],[2070,470,600,90],[2760,470,760,90],[3610,470,650,90],[4350,470,780,90],[5220,470,650,90],[5960,470,1600,90],[280,370,150,20],[760,310,140,20],[1420,360,160,20],[1800,290,130,20],[2250,350,160,20],[2900,300,140,20],[3700,360,170,20],[4020,285,130,20],[4550,350,160,20],[5400,305,140,20],[6150,360,160,20],[6600,290,140,20]]}
+let cp=[];for(let q of plats)if(q[1]<470)cp.push([q[0]+q[2]/2,q[1]-35]);for(let i=0;i<18;i++)cp.push([250+i*(WORLD-500)/18,425]);
+coins=cp.map(a=>({x:a[0],y:a[1],got:0}));stars=[{x:WORLD*.33,y:420,got:0},{x:WORLD*.66,y:420,got:0}];
+enemies=[];for(let i=0;i<(level===1?7:10);i++){let xx=800+i*(WORLD-1400)/(level===1?7:10);enemies.push({x:xx,y:436,min:xx-100,max:xx+120,d:i%2?1:-1,dead:0,fire:level===2&&i%2===0,cool:80+i*13})}
+}
+setup();
+function respawn(){p.x=checkpoint;p.y=400;p.vx=p.vy=0;inv=100}
+function lose(){if(inv||state!=='play')return;lives--;tone(110,.3,.06,'sawtooth');if(lives<=0){lives=0;state='over'}else respawn()}
+function restartLevel(){lives=3;state='play';respawn()}
+function shoot(){if(shotCD||state!=='play')return;shotCD=28;shots.push({x:p.x+(p.face>0?30:-8),y:p.y+23,v:p.face*8});tone(720,.07,.03)}
 function update(){
-if(state!=='play')return;if(inv)inv--;
-p.vx+=(k.R?0.8:0)-(k.L?0.8:0);p.vx*=.82;p.vx=Math.max(-6.4,Math.min(6.4,p.vx));if(Math.abs(p.vx)>.3)p.face=p.vx>0?1:-1;
-if(k.J&&p.on){p.vy=-13;p.on=0;tone(420,.1,.035)}p.vy=Math.min(15,p.vy+.65);let oy=p.y;p.x+=p.vx;p.x=Math.max(0,Math.min(WORLD-30,p.x));p.y+=p.vy;p.on=0;p.step+=Math.abs(p.vx)*.08;
+if(state!=='play')return;if(inv)inv--;if(shotCD)shotCD--;if(key.F)shoot();
+p.vx+=(key.R?.8:0)-(key.L?.8:0);p.vx*=.82;p.vx=Math.max(-6.4,Math.min(6.4,p.vx));if(Math.abs(p.vx)>.3)p.face=p.vx>0?1:-1;if(key.J&&p.on){p.vy=-13;p.on=0;tone(430,.08,.03)}p.vy=Math.min(15,p.vy+.65);let oy=p.y;p.x+=p.vx;p.y+=p.vy;p.on=0;p.step+=Math.abs(p.vx)*.08;
 for(const q of plats){let b={x:q[0],y:q[1],w:q[2],h:q[3]};if(hit(p,b)&&oy+p.h<=b.y+8&&p.vy>=0){p.y=b.y-p.h;p.vy=0;p.on=1}}
-if(p.y>620){lose();return}
-for(const o of coins)if(!o.got&&Math.hypot(p.x+15-o.x,p.y+24-o.y)<32){o.got=1;score+=100;tone(880,.07,.035)}
-for(const s of stars)if(!s.got&&Math.hypot(p.x+15-s.x,p.y+24-s.y)<35){s.got=1;score+=500;lives=Math.min(5,lives+1);tone(1047,.18,.05)}
-for(const e of enemies){if(e.dead)continue;e.x+=e.d*1.15;if(e.x<e.min||e.x>e.max)e.d*=-1;let b={x:e.x,y:e.y,w:36,h:34};if(hit(p,b)){if(p.vy>2&&oy+p.h<=e.y+12){e.dead=1;p.vy=-8;score+=250;tone(180,.1,.05)}else{lose();return}}}
-if(p.x>2300&&checkpoint<2300){checkpoint=2300;tone(660,.2,.04)}if(p.x>4500&&checkpoint<4500){checkpoint=4500;tone(660,.2,.04)}
-if(p.x>7000){state='win';score+=1500;tone(523,.15,.05);setTimeout(()=>tone(659,.15,.05),150);setTimeout(()=>tone(784,.35,.05),300)}
+if(p.y>620){lose();return}for(const o of coins)if(!o.got&&Math.hypot(p.x-o.x,p.y-o.y)<40){o.got=1;score+=100;tone(880,.06,.03)}
+for(const s of stars)if(!s.got&&Math.hypot(p.x-s.x,p.y-s.y)<45){s.got=1;score+=500;lives=Math.min(5,lives+1);tone(1047,.15,.04)}
+for(const e of enemies){if(e.dead)continue;e.x+=e.d*1.1;if(e.x<e.min||e.x>e.max)e.d*=-1;if(e.fire&&--e.cool<=0){e.cool=150;fireballs.push({x:e.x,y:e.y+15,v:(p.x<e.x?-3.5:3.5),vy:-2})}let b={x:e.x,y:e.y,w:36,h:34};if(hit(p,b)){if(p.vy>2&&oy+p.h<=e.y+12){e.dead=1;p.vy=-8;score+=250}else{lose();return}}}
+for(const s of shots){s.x+=s.v;for(const e of enemies)if(!e.dead&&hit({x:s.x,y:s.y,w:12,h:8},{x:e.x,y:e.y,w:36,h:34})){e.dead=1;s.dead=1;score+=300;tone(190,.1,.04)}}
+shots=shots.filter(s=>!s.dead&&s.x>cam-50&&s.x<cam+W+100);
+for(const f of fireballs){f.x+=f.v;f.vy+=.12;f.y+=f.vy;if(hit(p,{x:f.x,y:f.y,w:14,h:14})){f.dead=1;lose()}}fireballs=fireballs.filter(f=>!f.dead&&f.y<550&&f.x>cam-100&&f.x<cam+W+100);
+if(p.x>WORLD*.38&&checkpoint<WORLD*.38){checkpoint=WORLD*.38;tone(660,.15,.03)}if(p.x>WORLD*.72&&checkpoint<WORLD*.72){checkpoint=WORLD*.72;tone(660,.15,.03)}
+if(p.x>finish){state='win';localStorage.setItem('bebellaScore',score);if(level===1)localStorage.setItem('bebellaLevel','2');tone(523,.15,.05)}
 cam=Math.max(0,Math.min(WORLD-W,p.x-330))}
-function girl(px,py){
-X.save();X.translate(Math.round(px-cam),Math.round(py));if(p.face<0){X.translate(30,0);X.scale(-1,1)}
-let walk=p.on&&Math.abs(p.vx)>.4?Math.sin(p.step)*2:0;
-// cabelo cacheado
-X.fillStyle='#2d1a18';[[2,3],[8,0],[15,1],[22,3],[0,10],[25,10],[1,18],[24,18]].forEach(a=>X.fillRect(a[0],a[1],8,9));
-X.fillStyle='#b97850';X.fillRect(7,8,18,20);
-// tiara e laço
-X.fillStyle='#f04f9e';X.fillRect(4,4,24,4);X.fillRect(22,0,6,7);X.fillRect(27,2,5,5);
-// óculos claros
-X.fillStyle='#e7f7ff';X.fillRect(5,11,10,7);X.fillRect(18,11,10,7);X.fillStyle='#9ad5e8';X.fillRect(14,13,5,2);
-X.fillStyle='#24212a';X.fillRect(9,13,2,2);X.fillRect(22,13,2,2);X.fillStyle='#8f4d3d';X.fillRect(14,21,5,2);
-// camiseta preta e detalhe rosa
-X.fillStyle='#151515';X.fillRect(5,28,21,13);X.fillStyle='#f04f9e';X.fillRect(13,31,5,5);
-// braços/pernas
-X.fillStyle='#b97850';X.fillRect(2,29,4,11);X.fillRect(26,29,4,11);X.fillRect(8,41+walk,6,5);X.fillRect(18,41-walk,6,5);
-X.fillStyle='#f04f9e';X.fillRect(6,45+walk,9,3);X.fillRect(17,45-walk,9,3);X.restore()}
-function cloud(a,b){X.fillStyle='#fff';X.fillRect(a,b,90,18);X.fillRect(a+18,b-15,48,18)}
-function star(x,y){X.save();X.translate(x-cam,y);X.fillStyle='#fff06a';X.font='bold 28px serif';X.fillText('★',-14,10);X.restore()}
+function girl(){
+x.save();x.translate(Math.round(p.x-cam),Math.round(p.y));if(p.face<0){x.translate(30,0);x.scale(-1,1)}let w=p.on&&Math.abs(p.vx)>.4?Math.sin(p.step)*2:0;
+x.fillStyle='#2b1917';[[2,3],[8,0],[15,1],[22,3],[0,10],[25,10],[1,18],[24,18]].forEach(a=>x.fillRect(a[0],a[1],8,9));x.fillStyle='#b97850';x.fillRect(7,8,18,20);x.fillStyle='#f04f9e';x.fillRect(4,4,24,4);x.fillRect(22,0,6,7);x.fillRect(27,2,5,5);x.fillStyle='#e7f7ff';x.fillRect(5,11,10,7);x.fillRect(18,11,10,7);x.fillStyle='#24212a';x.fillRect(9,13,2,2);x.fillRect(22,13,2,2);x.fillStyle='#151515';x.fillRect(5,28,21,13);x.fillStyle='#f04f9e';x.fillRect(13,31,5,5);x.fillStyle='#b97850';x.fillRect(2,29,4,11);x.fillRect(26,29,4,11);x.fillRect(8,41+w,6,5);x.fillRect(18,41-w,6,5);x.fillStyle='#f04f9e';x.fillRect(6,45+w,9,3);x.fillRect(17,45-w,9,3);x.restore()}
+function bg(){
+if(level===1){let g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#55bdff');g.addColorStop(1,'#e8f9ff');x.fillStyle=g;x.fillRect(0,0,W,H);x.fillStyle='#fff';for(let i=0;i<12;i++){let a=i*300-(cam*.15)%300;x.fillRect(a,80+(i%3)*40,85,16);x.fillRect(a+20,66+(i%3)*40,45,16)}}
+else{x.fillStyle='#071330';x.fillRect(0,0,W,H);for(let i=0;i<70;i++){let sx=(i*137-(cam*.04))%1000,sy=25+(i*71)%300;x.fillStyle=i%5?'#fff':'#ffe879';x.fillRect(sx,sy,i%7===0?3:2,i%7===0?3:2)}x.fillStyle='#dfe8ff';x.beginPath();x.arc(800,95,42,0,7);x.fill();x.fillStyle='#071330';x.beginPath();x.arc(780,80,42,0,7);x.fill()}}
 function draw(){
-let g=X.createLinearGradient(0,0,0,H);g.addColorStop(0,'#55bdff');g.addColorStop(1,'#e8f9ff');X.fillStyle=g;X.fillRect(0,0,W,H);
-for(let i=0;i<16;i++)cloud(i*300-(cam*.16)%300,65+(i%3)*42);
-X.fillStyle='#8bd36a';for(let i=0;i<10;i++){let a=i*430-cam*.4;X.beginPath();X.arc(a,470,160,Math.PI,0);X.fill()}
-for(const q of plats){X.fillStyle='#54ad4b';X.fillRect(q[0]-cam,q[1],q[2],14);X.fillStyle='#8a5a35';X.fillRect(q[0]-cam,q[1]+14,q[2],q[3]-14)}
-for(const o of coins)if(!o.got){X.fillStyle='#ffd21f';X.beginPath();X.arc(o.x-cam,o.y,10,0,7);X.fill()}
-for(const s of stars)if(!s.got)star(s.x,s.y);
-for(const e of enemies)if(!e.dead){X.fillStyle='#713a27';X.fillRect(e.x-cam,e.y,36,34);X.fillStyle='#fff';X.fillRect(e.x-cam+5,e.y+7,9,8);X.fillRect(e.x-cam+22,e.y+7,9,8);X.fillStyle='#222';X.fillRect(e.x-cam+9,e.y+10,3,3);X.fillRect(e.x-cam+24,e.y+10,3,3)}
-// checkpoints
-for(const cp of [2300,4500]){X.fillStyle='#eee';X.fillRect(cp-cam,390,6,80);X.fillStyle='#f04f9e';X.fillRect(cp+6-cam,395,55,28)}
-// chegada + cachorro
-X.fillStyle='#f7b733';X.fillRect(7030-cam,260,10,210);X.fillStyle='#f04f9e';X.fillRect(7040-cam,270,95,48);X.fillStyle='#fff';X.font='bold 15px monospace';X.fillText('BEBELLA!',7048-cam,299);
-X.fillStyle='#eee';X.fillRect(6960-cam,428,34,30);X.fillStyle='#333';X.fillRect(6962-cam,423,10,12);X.fillRect(6982-cam,423,10,12);X.fillStyle='#111';X.fillRect(6974-cam,440,5,4);
-if(!inv||Math.floor(inv/6)%2===0)girl(p.x,p.y);
-X.fillStyle='#111b';X.fillRect(15,14,310,55);X.fillStyle='#fff';X.font='bold 20px monospace';X.fillText('⭐ '+score+'   ❤️ '+lives+'   🎀 '+stars.filter(s=>s.got).length+'/3',28,49);
-X.textAlign='center';
-if(state==='intro'){X.fillStyle='#111d';X.fillRect(150,120,660,280);X.fillStyle='#fff';X.font='bold 38px monospace';X.fillText('SUPER BEBELLA WORLD 🎀',480,190);X.font='bold 24px monospace';X.fillText('BEBELLA, SUA AVENTURA',480,250);X.fillText('COMEÇA AGORA!',480,282);X.font='18px monospace';X.fillText('Toque na tela para começar',480,345)}
-if(state==='over'||state==='win'){X.fillStyle='#111d';X.fillRect(170,140,620,235);X.fillStyle='#fff';X.font='bold 40px monospace';X.fillText(state==='win'?'BEBELLA CONSEGUIU! 🎀🐶':'FIM DE JOGO',480,220);X.font='21px monospace';X.fillText(state==='win'?'Você encontrou seu amiguinho!':'Vamos tentar novamente?',480,270);X.fillText('Pontuação: '+score,480,310);X.font='17px monospace';X.fillText('Toque para jogar novamente',480,345)}
-X.textAlign='left'}
-(function loop(){update();draw();requestAnimationFrame(loop)})();
+bg();for(const q of plats){x.fillStyle=level===1?'#54ad4b':'#5268a8';x.fillRect(q[0]-cam,q[1],q[2],14);x.fillStyle=level===1?'#8a5a35':'#26325c';x.fillRect(q[0]-cam,q[1]+14,q[2],q[3]-14)}
+for(const o of coins)if(!o.got){x.fillStyle='#ffd21f';x.beginPath();x.arc(o.x-cam,o.y,9,0,7);x.fill()}for(const s of stars)if(!s.got){x.fillStyle='#fff06a';x.font='26px serif';x.fillText('★',s.x-cam-12,s.y+8)}
+for(const e of enemies)if(!e.dead){x.fillStyle=e.fire?'#9d342d':'#713a27';x.fillRect(e.x-cam,e.y,36,34);x.fillStyle='#fff';x.fillRect(e.x-cam+5,e.y+7,9,8);x.fillRect(e.x-cam+22,e.y+7,9,8);if(e.fire){x.fillStyle='#ff8a2b';x.fillRect(e.x-cam+12,e.y-8,12,9)}}
+for(const s of shots){x.fillStyle='#c5a3ff';x.beginPath();x.arc(s.x-cam,s.y,7,0,7);x.fill();x.fillStyle='#fff';x.fillRect(s.x-cam-2,s.y-2,4,4)}
+for(const f of fireballs){x.fillStyle='#ff5a24';x.beginPath();x.arc(f.x-cam,f.y,8,0,7);x.fill();x.fillStyle='#ffd24a';x.beginPath();x.arc(f.x-cam,f.y,4,0,7);x.fill()}
+x.fillStyle='#f7b733';x.fillRect(finish-cam,260,10,210);x.fillStyle='#f04f9e';x.fillRect(finish+10-cam,270,105,48);x.fillStyle='#fff';x.font='bold 15px monospace';x.fillText(level===1?'FASE 2 →':'BEBELLA!',finish+18-cam,299);
+if(!inv||Math.floor(inv/6)%2===0)girl();x.fillStyle='#111b';x.fillRect(14,14,345,55);x.fillStyle='#fff';x.font='bold 19px monospace';x.fillText('FASE '+level+'   ⭐ '+score+'   ❤️ '+lives,27,49);
+x.textAlign='center';if(state==='intro'){x.fillStyle='#111d';x.fillRect(145,125,670,270);x.fillStyle='#fff';x.font='bold 38px monospace';x.fillText(level===1?'SUPER BEBELLA WORLD 🎀':'FASE 2 — NOITE ESTRELADA ✨',480,195);x.font='21px monospace';x.fillText(level===1?'A aventura continua!':'Cuidado: eles cospem fogo!',480,255);x.fillText('✦ = poder da Bebella',480,295);x.font='17px monospace';x.fillText('Toque para começar',480,345)}
+if(state==='over'||state==='win'){x.fillStyle='#111d';x.fillRect(170,145,620,225);x.fillStyle='#fff';x.font='bold 38px monospace';x.fillText(state==='win'?(level===1?'FASE 1 COMPLETA! 🎀':'BEBELLA VENCEU! ✨'):'FIM DE JOGO',480,220);x.font='20px monospace';x.fillText(state==='win'?(level===1?'Toque para entrar na noite':'Você completou as duas fases!'):'Toque para tentar novamente',480,285);x.fillText('Pontuação: '+score,480,325)}x.textAlign='left'}
+function loop(t){musicTick(t/1000);update();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 </script></body></html>
