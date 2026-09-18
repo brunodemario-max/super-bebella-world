@@ -8,10 +8,12 @@ canvas{position:fixed;left:50%;top:50%;display:block;width:960px;height:540px;tr
 .ctrl{position:fixed;inset:0;z-index:20;pointer-events:none}.b{pointer-events:auto;position:absolute;bottom:max(18px,env(safe-area-inset-bottom));border:3px solid #fff9;background:#17213dbb;color:#fff;font-weight:bold;box-shadow:0 4px #0005}
 #L,#R{width:76px;height:76px;border-radius:22px;font-size:34px}#L{left:max(20px,env(safe-area-inset-left))}#R{left:max(110px,calc(env(safe-area-inset-left) + 90px))}
 #J,#F{width:86px;height:86px;border-radius:50%;font-size:29px}#J{right:max(22px,env(safe-area-inset-right));background:#ed4f9ecc}#F{right:max(120px,calc(env(safe-area-inset-right) + 98px));background:#7657e6cc}
-#snd{position:fixed;z-index:25;right:max(15px,env(safe-area-inset-right));top:max(10px,env(safe-area-inset-top));border:2px solid #fff8;border-radius:12px;background:#111a;color:#fff;font-size:21px;padding:8px}
-@media(orientation:portrait){#rot{display:flex}.ctrl,#snd{display:none}}
+#snd,#pause{position:fixed;z-index:25;top:max(10px,env(safe-area-inset-top));border:2px solid #fff8;border-radius:12px;background:#111a;color:#fff;font-size:21px;padding:8px}
+#snd{right:max(15px,env(safe-area-inset-right))}
+#pause{right:max(68px,calc(env(safe-area-inset-right) + 53px));min-width:46px}
+@media(orientation:portrait){#rot{display:flex}.ctrl,#snd,#pause{display:none}}
 </style></head><body><canvas id="c" width="960" height="540"></canvas><div id="rot"><div><b>📱↻</b>Vire o celular para jogar<br>SUPER BEBELLA WORLD 🎀</div></div>
-<button id="snd">🔊</button><div class="ctrl"><button class="b" id="L">◀</button><button class="b" id="R">▶</button><button class="b" id="F">✦</button><button class="b" id="J">▲</button></div>
+<button id="snd">🔊</button><button id="pause">⏸</button><div class="ctrl"><button class="b" id="L">◀</button><button class="b" id="R">▶</button><button class="b" id="F">✦</button><button class="b" id="J">▲</button></div>
 <script>
 const c=document.querySelector('#c'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const W=960,H=540;
 function fitGame(){
@@ -27,7 +29,7 @@ document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false})
 document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
 let lastTouchEnd=0;document.addEventListener('touchend',e=>{let n=Date.now();if(n-lastTouchEnd<=350)e.preventDefault();lastTouchEnd=n},{passive:false});
 
-let key={L:0,R:0,J:0,F:0},level=Math.max(1,Math.min(5,+localStorage.getItem('bebellaLevel')||1)),score=+localStorage.getItem('bebellaScore')||0,lives=3,state='intro',cam=0,inv=90,shotCD=0,soundOn=true,ac=null,musicStarted=false,nextNote=0,noteI=0;
+let key={L:0,R:0,J:0,F:0},unlocked=Math.max(1,Math.min(5,+localStorage.getItem('bebellaLevel')||1)),level=Math.max(1,Math.min(5,+localStorage.getItem('bebellaLevel')||1)),score=+localStorage.getItem('bebellaScore')||0,lives=3,state='select',cam=0,inv=90,shotCD=0,soundOn=true,ac=null,musicStarted=false,nextNote=0,noteI=0;
 let boss=null;preamble=0;
 let p={x:90,y:400,w:30,h:48,vx:0,vy:0,on:0,face:1,step:0},coins=[],enemies=[],shots=[],fireballs=[],stars=[],plats=[],WORLD=6000,finish=5800,checkpoint=90;
 const melodies=[
@@ -40,10 +42,19 @@ const melodies=[
 function audio(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();musicStarted=true}
 function tone(f,d=.08,v=.035,type='square'){if(!soundOn)return;audio();let o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}
 function musicTick(t){if(!soundOn||!musicStarted||state!=='play'||!ac)return;if(t>=nextNote){let song=melodies[level-1]||melodies[0];tone(song[noteI++%song.length],.16,.025,level===2?'triangle':'square');nextNote=t+.19}}
-document.querySelector('#snd').onclick=e=>{e.stopPropagation();audio();soundOn=!soundOn;e.currentTarget.textContent=soundOn?'🔊':'🔇';if(soundOn){musicStarted=true;nextNote=0}};
+document.querySelector('#snd').onclick=e=>{e.stopPropagation();audio();soundOn=!soundOn;e.currentTarget.textContent=soundOn?'🔊':'🔇';if(soundOn){musicStarted=true;nextNote=0}};document.querySelector('#pause').onclick=e=>{e.stopPropagation();audio();if(state==='play'){state='paused';e.currentTarget.textContent='▶'}else if(state==='paused'){state='play';e.currentTarget.textContent='⏸'}};
+
 function bind(id,n){let b=document.querySelector(id);b.onpointerdown=e=>{e.preventDefault();audio();key[n]=1;b.setPointerCapture?.(e.pointerId)};b.onpointerup=b.onpointercancel=e=>{e.preventDefault();key[n]=0}}bind('#L','L');bind('#R','R');bind('#J','J');bind('#F','F');
 onkeydown=e=>{if(e.key==='ArrowLeft')key.L=1;if(e.key==='ArrowRight')key.R=1;if(e.key==='ArrowUp'||e.key===' ')key.J=1;if(e.key==='x'||e.key==='X')key.F=1};onkeyup=e=>{if(e.key==='ArrowLeft')key.L=0;if(e.key==='ArrowRight')key.R=0;if(e.key==='ArrowUp'||e.key===' ')key.J=0;if(e.key==='x'||e.key==='X')key.F=0};
-c.onpointerdown=()=>{audio();if(state==='intro')state='play';else if(state==='over')restartLevel();else if(state==='win'){if(level<5){level++;localStorage.setItem('bebellaLevel',String(level));setup();state='intro'}else{localStorage.setItem('bebellaLevel','1');localStorage.setItem('bebellaScore','0');level=1;score=0;setup();state='intro'}}};
+c.onpointerdown=e=>{audio();
+const r=c.getBoundingClientRect(),mx=(e.clientX-r.left)*(W/r.width),my=(e.clientY-r.top)*(H/r.height);
+if(state==='paused'){
+ if(mx>=335&&mx<=625&&my>=245&&my<=300){state='play';document.querySelector('#pause').textContent='⏸';return}
+ if(mx>=335&&mx<=625&&my>=315&&my<=370){state='select';document.querySelector('#pause').textContent='⏸';return}
+ return;
+}
+if(state==='select'){for(let i=1;i<=5;i++){let bx=160+(i-1)*135,by=255;if(mx>=bx&&mx<=bx+105&&my>=by&&my<=by+75&&i<=unlocked){level=i;setup();state='intro';return}}return}
+if(state==='intro')state='play';else if(state==='over')restartLevel();else if(state==='win'){if(level<5){let n=level+1;if(n>unlocked){unlocked=n;localStorage.setItem('bebellaLevel',String(unlocked))}level=n;setup();state='intro'}else state='select'}};
 function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function setup(){
 cam=0;lives=3;inv=100;shots=[];fireballs=[];checkpoint=90;boss=level===5?{x:6200,y:335,w:58,h:135,hp:12,cool:70,dead:0}:null;p.x=90;p.y=400;p.vx=p.vy=0;
@@ -78,7 +89,7 @@ if(boss&&!boss.dead){
  for(const s of shots)if(!s.dead&&hit({x:s.x,y:s.y,w:12,h:8},boss)){s.dead=1;boss.hp--;tone(150,.09,.045);if(boss.hp<=0){boss.dead=1;score+=3000;tone(784,.4,.06)}}
 }
 if(level===5&&p.x>finish&&boss&&!boss.dead){p.x=finish-30;p.vx=0}
-if(p.x>finish){state='win';localStorage.setItem('bebellaScore',score);if(level<5)localStorage.setItem('bebellaLevel',String(level+1));tone(523,.15,.05)}
+if(p.x>finish){state='win';localStorage.setItem('bebellaScore',score);if(level<5&&level+1>unlocked){unlocked=level+1;localStorage.setItem('bebellaLevel',String(unlocked))}tone(523,.15,.05)}
 cam=Math.max(0,Math.min(WORLD-W,p.x-330))}
 function girl(){
 x.save();x.translate(Math.round(p.x-cam),Math.round(p.y));if(p.face<0){x.translate(30,0);x.scale(-1,1)}let w=p.on&&Math.abs(p.vx)>.4?Math.sin(p.step)*2:0;
@@ -101,7 +112,10 @@ if(level===5){
  x.fillStyle='#d9b18b';x.fillRect(6620-cam,382,30,34);x.fillStyle='#ddd';x.fillRect(6617-cam,372,36,15);x.fillStyle='#7b4c8e';x.fillRect(6615-cam,416,40,50);x.fillStyle='#fff';x.font='bold 13px monospace';x.fillText('VOVÓ',6608-cam,360);
  if(boss&&!boss.dead){x.save();x.translate(boss.x-cam,boss.y);x.fillStyle='#eee8dc';x.fillRect(0,0,58,120);x.fillStyle='#d8d0c5';for(let i=0;i<5;i++)x.fillRect(8,12+i*18,42,2);x.fillStyle='#f08a2f';x.fillRect(0,110,58,25);x.fillStyle='#2b2025';x.fillRect(12,30,10,12);x.fillRect(37,30,10,12);x.fillStyle='#9b2736';x.fillRect(17,62,25,9);x.fillStyle='#777';x.fillRect(15,-15,30,12);x.fillStyle='#aaa';x.fillRect(22,-29,22,10);x.restore();x.fillStyle='#111c';x.fillRect(610,78,310,34);x.fillStyle='#fff';x.font='bold 15px monospace';x.fillText('CIGARRO MALVADO',625,100);x.fillStyle='#e64b55';x.fillRect(760,88,145*(boss.hp/12),12)}
 }if(!inv||Math.floor(inv/6)%2===0)girl();x.fillStyle='#111b';x.fillRect(14,14,345,55);x.fillStyle='#fff';x.font='bold 19px monospace';x.fillText('FASE '+level+'   ⭐ '+score+'   ❤️ '+lives,27,49);
-x.textAlign='center';if(state==='intro'){x.fillStyle='#111d';x.fillRect(145,125,670,270);x.fillStyle='#fff';x.font='bold 38px monospace';x.fillText(['SUPER BEBELLA WORLD 🎀','FASE 2 — NOITE ESTRELADA ✨','FASE 3 — PRAIA DA BEBELLA 🏖️','FASE 4 — DESERTO DOURADO 🏜️','FASE 5 — RESGATE DA VOVÓ 👵'][level-1],480,195);x.font='21px monospace';x.fillText(['A aventura continua!','Cuidado: eles cospem fogo!','Sol, mar e muita aventura!','Cuidado com o calor!','Derrote o Cigarro Malvado!'][level-1],480,255);x.fillText('✦ = poder da Bebella',480,295);x.font='17px monospace';x.fillText('Toque para começar',480,345)}
+x.textAlign='center';
+if(state==='paused'){x.fillStyle='#080b18dd';x.fillRect(0,0,W,H);x.fillStyle='#fff';x.font='bold 40px monospace';x.fillText('PAUSADO ⏸',480,175);x.fillStyle='#f04f9e';x.fillRect(335,245,290,55);x.fillStyle='#fff';x.font='bold 20px monospace';x.fillText('▶ CONTINUAR',480,280);x.fillStyle='#7657e6';x.fillRect(335,315,290,55);x.fillStyle='#fff';x.fillText('☰ SELEÇÃO DE FASES',480,350)}
+if(state==='select'){x.fillStyle='#0c1026ee';x.fillRect(90,80,780,385);x.fillStyle='#fff';x.font='bold 36px monospace';x.fillText('SELECIONE A FASE 🎀',480,140);x.font='16px monospace';x.fillText('Só aparecem liberadas as fases que você conquistou',480,180);const icons=['🌳','🌙','🏖️','🏜️','👵'];for(let i=1;i<=5;i++){let bx=160+(i-1)*135,by=255,ok=i<=unlocked;x.fillStyle=ok?'#f04f9e':'#34394d';x.fillRect(bx,by,105,75);x.strokeStyle=ok?'#fff':'#777';x.lineWidth=3;x.strokeRect(bx,by,105,75);x.fillStyle=ok?'#fff':'#888';x.font='bold 24px monospace';x.fillText(ok?icons[i-1]:'🔒',bx+52,by+31);x.font='bold 15px monospace';x.fillText('FASE '+i,bx+52,by+58)}x.fillStyle='#cfd5ee';x.font='15px monospace';x.fillText('Progresso salvo: fase '+unlocked+' desbloqueada',480,390)}
+if(state==='intro'){x.fillStyle='#111d';x.fillRect(145,125,670,270);x.fillStyle='#fff';x.font='bold 38px monospace';x.fillText(['SUPER BEBELLA WORLD 🎀','FASE 2 — NOITE ESTRELADA ✨','FASE 3 — PRAIA DA BEBELLA 🏖️','FASE 4 — DESERTO DOURADO 🏜️','FASE 5 — RESGATE DA VOVÓ 👵'][level-1],480,195);x.font='21px monospace';x.fillText(['A aventura continua!','Cuidado: eles cospem fogo!','Sol, mar e muita aventura!','Cuidado com o calor!','Derrote o Cigarro Malvado!'][level-1],480,255);x.fillText('✦ = poder da Bebella',480,295);x.font='17px monospace';x.fillText('Toque para começar',480,345)}
 if(state==='over'||state==='win'){x.fillStyle='#111d';x.fillRect(170,145,620,225);x.fillStyle='#fff';x.font='bold 38px monospace';x.fillText(state==='win'?(level<5?'FASE '+level+' COMPLETA! 🎀':'VOVÓ FOI SALVA! 👵🎀'):'FIM DE JOGO',480,220);x.font='20px monospace';x.fillText(state==='win'?(level<5?'Toque para seguir para a próxima fase':'O Cigarro Malvado foi derrotado!'):'Toque para tentar novamente',480,285);x.fillText('Pontuação: '+score,480,325)}x.textAlign='left'}
 function loop(t){musicTick(t/1000);update();draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
 </script></body></html>
