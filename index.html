@@ -1,9 +1,9 @@
 <!doctype html><html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#0b1028"><title>Super Bebella World V3</title>
+<meta name="theme-color" content="#0b1028"><meta name="apple-mobile-web-app-capable" content="yes"><title>Super Bebella World V3</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1028;font-family:monospace;touch-action:none}
-canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+canvas{position:fixed;left:50%;top:50%;display:block;width:960px;height:540px;transform:translate(-50%,-50%) scale(var(--gameScale,1));transform-origin:center center;image-rendering:pixelated}
 #rot{display:none;position:fixed;inset:0;z-index:60;background:#10162d;color:white;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:bold}#rot b{display:block;font-size:55px}
 .ctrl{position:fixed;inset:0;z-index:20;pointer-events:none}.b{pointer-events:auto;position:absolute;bottom:max(18px,env(safe-area-inset-bottom));border:3px solid #fff9;background:#17213dbb;color:#fff;font-weight:bold;box-shadow:0 4px #0005}
 #L,#R{width:76px;height:76px;border-radius:22px;font-size:34px}#L{left:max(20px,env(safe-area-inset-left))}#R{left:max(110px,calc(env(safe-area-inset-left) + 90px))}
@@ -14,6 +14,19 @@ canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:p
 <button id="snd">🔊</button><div class="ctrl"><button class="b" id="L">◀</button><button class="b" id="R">▶</button><button class="b" id="F">✦</button><button class="b" id="J">▲</button></div>
 <script>
 const c=document.querySelector('#c'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const W=960,H=540;
+function fitGame(){
+ const vv=window.visualViewport;
+ const vw=vv?vv.width:window.innerWidth, vh=vv?vv.height:window.innerHeight;
+ const scale=Math.min(vw/W,vh/H);
+ document.documentElement.style.setProperty('--gameScale',String(scale));
+}
+fitGame();addEventListener('resize',fitGame);addEventListener('orientationchange',()=>setTimeout(fitGame,120));
+if(window.visualViewport){visualViewport.addEventListener('resize',fitGame);visualViewport.addEventListener('scroll',fitGame)}
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
+document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
+let lastTouchEnd=0;document.addEventListener('touchend',e=>{let n=Date.now();if(n-lastTouchEnd<=350)e.preventDefault();lastTouchEnd=n},{passive:false});
+
 let key={L:0,R:0,J:0,F:0},level=Math.max(1,Math.min(2,+localStorage.getItem('bebellaLevel')||1)),score=+localStorage.getItem('bebellaScore')||0,lives=3,state='intro',cam=0,inv=90,shotCD=0,soundOn=true,ac=null,musicStarted=false,nextNote=0,noteI=0;
 let p={x:90,y:400,w:30,h:48,vx:0,vy:0,on:0,face:1,step:0},coins=[],enemies=[],shots=[],fireballs=[],stars=[],plats=[],WORLD=6000,finish=5800,checkpoint=90;
 const melodies=[[262,330,392,523,392,330,294,349,440,587,440,349],[220,262,330,392,330,294,247,294,370,440,370,294]];
