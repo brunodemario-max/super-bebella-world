@@ -2,7 +2,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b1028"><meta name="apple-mobile-web-app-capable" content="yes"><title>Super Bebella World V3</title>
 <style>
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1028;font-family:monospace;touch-action:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1028;font-family:monospace;touch-action:none}
 canvas{position:fixed;left:50%;top:50%;display:block;width:960px;height:540px;transform:translate(-50%,-50%) scale(var(--gameScale,1));transform-origin:center center;image-rendering:pixelated}
 #rot{display:none;position:fixed;inset:0;z-index:60;background:#10162d;color:white;align-items:center;justify-content:center;text-align:center;font-size:22px;font-weight:bold}#rot b{display:block;font-size:55px}
 .ctrl{position:fixed;inset:0;z-index:20;pointer-events:none}.b{pointer-events:auto;position:absolute;bottom:max(18px,env(safe-area-inset-bottom));border:3px solid #fff9;background:#17213dbb;color:#fff;font-weight:bold;box-shadow:0 4px #0005}
@@ -15,13 +15,13 @@ canvas{position:fixed;left:50%;top:50%;display:block;width:960px;height:540px;tr
 <script>
 const c=document.querySelector('#c'),x=c.getContext('2d');x.imageSmoothingEnabled=false;const W=960,H=540;
 function fitGame(){
- const vv=window.visualViewport;
- const vw=vv?vv.width:window.innerWidth, vh=vv?vv.height:window.innerHeight;
+ const vw=window.innerWidth, vh=window.innerHeight;
  const scale=Math.min(vw/W,vh/H);
  document.documentElement.style.setProperty('--gameScale',String(scale));
 }
-fitGame();addEventListener('resize',fitGame);addEventListener('orientationchange',()=>setTimeout(fitGame,120));
-if(window.visualViewport){visualViewport.addEventListener('resize',fitGame);visualViewport.addEventListener('scroll',fitGame)}
+fitGame();
+let fitTimer=null;
+addEventListener('orientationchange',()=>{clearTimeout(fitTimer);fitTimer=setTimeout(fitGame,350)});
 document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});
 document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});
