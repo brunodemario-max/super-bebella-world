@@ -1,22 +1,140 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Super Bebella World</title>
-<style>*{box-sizing:border-box}body{margin:0;background:#101428;color:#fff;font-family:monospace;overflow:hidden;touch-action:none}canvas{position:fixed;left:0;top:50%;transform:translateY(-50%);width:100vw;height:auto;aspect-ratio:16/9;background:#6ec6ff;image-rendering:pixelated}.btn{position:fixed;bottom:22px;width:68px;height:68px;border:3px solid #fff8;border-radius:18px;background:#0006;color:#fff;font-size:32px;font-weight:bold;user-select:none}.l{left:20px}.r{left:100px}.j{right:25px;width:86px;background:#e83e8caa}#title{position:fixed;top:10px;left:0;right:0;text-align:center;text-shadow:3px 3px #8b2460;font-weight:bold;font-size:clamp(16px,4vw,30px);pointer-events:none}</style></head>
-<body><canvas id="c" width="960" height="540"></canvas><div id="title">SUPER BEBELLA WORLD 🎀</div><button class="btn l">◀</button><button class="btn r">▶</button><button class="btn j">▲</button>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<title>Super Bebella World</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111827;font-family:monospace;touch-action:none}
+#wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#111827}
+canvas{display:block;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;background:#63c5ff}
+#rotate{display:none;position:fixed;inset:0;z-index:30;background:#111827;color:white;align-items:center;justify-content:center;text-align:center;padding:35px;font-size:22px;font-weight:bold}
+#rotate span{font-size:54px;display:block;margin-bottom:18px}
+.controls{position:fixed;inset:0;z-index:20;pointer-events:none}
+.btn{pointer-events:auto;position:absolute;bottom:max(18px,env(safe-area-inset-bottom));width:78px;height:78px;border:3px solid #ffffff99;border-radius:22px;background:#172033aa;color:#fff;font-size:35px;font-weight:900;box-shadow:0 4px 0 #0005;user-select:none}
+#left{left:max(20px,env(safe-area-inset-left))}
+#right{left:max(112px,calc(env(safe-area-inset-left) + 92px))}
+#jump{right:max(24px,env(safe-area-inset-right));width:92px;height:92px;border-radius:50%;background:#e83e8ccc}
+@media (orientation:portrait){#rotate{display:flex}.controls{display:none}}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+<div id="rotate"><div><span>📱↻</span>Vire o celular para jogar<br><small>Super Bebella World 🎀</small></div></div>
+<div class="controls"><button class="btn" id="left">◀</button><button class="btn" id="right">▶</button><button class="btn" id="jump">▲</button></div>
 <script>
-const c=document.querySelector('#c'),x=c.getContext('2d');let key={},cam=0,score=0,lives=3,won=false,gameOver=false,inv=0,p={x:90,y:380,w:34,h:48,vx:0,vy:0,on:0};
-const platforms=[[-100,460,650,80],[630,460,400,80],[1110,460,500,80],[1700,460,800,80],[350,370,140,22],[760,330,130,22],[980,270,110,22],[1280,360,150,22],[1530,300,110,22],[1870,350,150,22],[2150,280,130,22]];
-let coins=[[390,330],[800,290],[1020,230],[1330,320],[1570,260],[1930,310],[2200,240]].map(a=>({x:a[0],y:a[1],got:0})),enemies=[{x:700,y:426,d:1},{x:1200,y:426,d:-1},{x:1810,y:426,d:1},{x:2050,y:426,d:-1}];
-function bind(s,k){let e=document.querySelector(s);e.onpointerdown=a=>{a.preventDefault();key[k]=1};e.onpointerup=e.onpointercancel=a=>{a.preventDefault();key[k]=0}}bind('.l','L');bind('.r','R');bind('.j','J');onkeydown=e=>key[e.key]=1;onkeyup=e=>key[e.key]=0;
-function reset(){p.x=90;p.y=380;p.vx=p.vy=0;cam=0;inv=90}function loseLife(){if(inv||gameOver)return;lives=Math.max(0,lives-1);if(lives===0){gameOver=true;return}reset()}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
-function update(){if(won||gameOver)return;if(inv>0)inv--;let L=key.L||key.ArrowLeft,R=key.R||key.ArrowRight,J=key.J||key.ArrowUp||key[' '];p.vx+=(R-L)*.75;p.vx*=.82;p.vx=Math.max(-6,Math.min(6,p.vx));if(J&&p.on){p.vy=-13;p.on=0}p.vy=Math.min(p.vy+.65,15);let oy=p.y;p.x+=p.vx;p.y+=p.vy;p.on=0;
-for(let q of platforms){let b={x:q[0],y:q[1],w:q[2],h:q[3]};if(hit(p,b)&&oy+p.h<=b.y+8&&p.vy>=0){p.y=b.y-p.h;p.vy=0;p.on=1}}if(p.y>600){loseLife()}
-for(let o of coins)if(!o.got&&Math.hypot(p.x+17-o.x,p.y+24-o.y)<38){o.got=1;score+=100}
-for(let e of enemies){e.x+=e.d*1.2;if(e.x%260<2)e.d*=-1;let b={x:e.x,y:e.y,w:36,h:34};if(hit(p,b)){if(p.vy>2&&p.y+35<e.y+15){e.dead=1;p.vy=-8;score+=250}else{loseLife()}}}enemies=enemies.filter(e=>!e.dead);if(p.x>2360){won=true;score+=1000}cam=Math.max(0,Math.min(1550,p.x-300))}
-function bella(px,py){x.save();x.translate(px-cam,py);if(p.vx<-.2){x.translate(34,0);x.scale(-1,1)}x.fillStyle='#3b2118';x.fillRect(3,3,29,27);x.fillStyle='#b97850';x.fillRect(8,8,20,19);x.fillStyle='#e83e8c';x.fillRect(4,1,28,5);x.fillStyle='#d7efff';x.fillRect(6,10,11,8);x.fillRect(20,10,11,8);x.fillStyle='#222';x.fillRect(11,13,3,3);x.fillRect(24,13,3,3);x.fillStyle='#111';x.fillRect(5,27,28,17);x.fillStyle='#e83e8c';x.fillRect(3,43,13,5);x.fillRect(21,43,13,5);x.restore()}
-function draw(){x.clearRect(0,0,960,540);let g=x.createLinearGradient(0,0,0,540);g.addColorStop(0,'#55b9ff');g.addColorStop(1,'#dff7ff');x.fillStyle=g;x.fillRect(0,0,960,540);x.fillStyle='#fff';for(let i=0;i<9;i++){let a=i*310-cam*.2;x.fillRect(a,80+i%3*45,90,18);x.fillRect(a+20,65+i%3*45,45,18)}
-for(let q of platforms){x.fillStyle='#56a84f';x.fillRect(q[0]-cam,q[1],q[2],14);x.fillStyle='#8a5a35';x.fillRect(q[0]-cam,q[1]+14,q[2],q[3]-14)}
-for(let o of coins)if(!o.got){x.fillStyle='#ffd21f';x.beginPath();x.arc(o.x-cam,o.y,11,0,7);x.fill()}for(let e of enemies){x.fillStyle='#743b25';x.fillRect(e.x-cam,e.y,36,34);x.fillStyle='#fff';x.fillRect(e.x-cam+6,e.y+7,8,8);x.fillRect(e.x-cam+22,e.y+7,8,8)}
-x.fillStyle='#f7b733';x.fillRect(2370-cam,260,12,200);x.fillStyle='#ff4f9a';x.fillRect(2382-cam,270,90,50);x.fillStyle='#fff';x.font='bold 16px monospace';x.fillText('BEBELLA!',2388-cam,301);if(!inv||Math.floor(inv/6)%2===0)bella(p.x,p.y);x.fillStyle='#111a';x.fillRect(14,14,230,58);x.fillStyle='#fff';x.font='bold 21px monospace';x.fillText('⭐ '+score+'   ❤️ '+lives,28,50);
-if(gameOver){x.fillStyle='#111c';x.fillRect(190,150,580,210);x.fillStyle='#fff';x.textAlign='center';x.font='bold 42px monospace';x.fillText('FIM DE JOGO',480,235);x.font='24px monospace';x.fillText('Recarregue a página para tentar novamente',480,295);x.textAlign='left'}if(won){x.fillStyle='#111c';x.fillRect(190,150,580,210);x.fillStyle='#fff';x.textAlign='center';x.font='bold 40px monospace';x.fillText('BEBELLA VENCEU! 🎀',480,225);x.font='24px monospace';x.fillText('Pontuação: '+score,480,275);x.fillText('Recarregue para jogar novamente',480,320);x.textAlign='left'}}
+const c=document.getElementById('game'),ctx=c.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const W=960,H=540,WORLD=3300;
+let keys={L:false,R:false,J:false},score=0,lives=3,cam=0,state='play',inv=90;
+const start={x:90,y:380};
+let p={x:start.x,y:start.y,w:32,h:46,vx:0,vy:0,on:false};
+
+const platforms=[
+[-100,465,650,90],[610,465,430,90],[1100,465,560,90],[1720,465,680,90],[2470,465,900,90],
+[330,375,150,22],[730,350,145,22],[950,290,125,22],[1260,365,160,22],[1510,305,125,22],
+[1840,370,160,22],[2100,310,145,22],[2570,365,160,22],[2820,300,140,22]
+];
+const coinPos=[[385,335],[775,310],[995,250],[1320,325],[1550,265],[1900,330],[2150,270],[2630,325],[2870,260]];
+let coins,enemies;
+function newObjects(){
+ coins=coinPos.map(a=>({x:a[0],y:a[1],got:false}));
+ enemies=[
+ {x:680,y:431,min:640,max:900,d:1,dead:false},
+ {x:1190,y:431,min:1140,max:1500,d:-1,dead:false},
+ {x:1800,y:431,min:1760,max:2150,d:1,dead:false},
+ {x:2520,y:431,min:2500,max:2850,d:-1,dead:false}
+ ];
+}
+newObjects();
+
+function rect(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
+function respawn(){p.x=start.x;p.y=start.y;p.vx=0;p.vy=0;cam=0;inv=100}
+function lose(){if(inv>0||state!=='play')return;lives--;if(lives<=0){lives=0;state='over';return}respawn()}
+function restart(){score=0;lives=3;state='play';newObjects();respawn()}
+
+function setButton(id,k){
+ const b=document.getElementById(id);
+ const down=e=>{e.preventDefault();keys[k]=true;b.setPointerCapture?.(e.pointerId)};
+ const up=e=>{e.preventDefault();keys[k]=false};
+ b.addEventListener('pointerdown',down);b.addEventListener('pointerup',up);
+ b.addEventListener('pointercancel',up);b.addEventListener('pointerleave',up);
+}
+setButton('left','L');setButton('right','R');setButton('jump','J');
+addEventListener('keydown',e=>{
+ if(['ArrowLeft','a','A'].includes(e.key))keys.L=true;
+ if(['ArrowRight','d','D'].includes(e.key))keys.R=true;
+ if(['ArrowUp','w','W',' '].includes(e.key))keys.J=true;
+ if((state==='over'||state==='win')&&e.key==='Enter')restart();
+});
+addEventListener('keyup',e=>{
+ if(['ArrowLeft','a','A'].includes(e.key))keys.L=false;
+ if(['ArrowRight','d','D'].includes(e.key))keys.R=false;
+ if(['ArrowUp','w','W',' '].includes(e.key))keys.J=false;
+});
+c.addEventListener('pointerdown',()=>{if(state!=='play')restart()});
+
+function update(){
+ if(state!=='play')return;
+ if(inv>0)inv--;
+ p.vx+=(keys.R?0.8:0)-(keys.L?0.8:0); p.vx*=0.82; p.vx=Math.max(-6.2,Math.min(6.2,p.vx));
+ if(keys.J&&p.on){p.vy=-13;p.on=false}
+ p.vy=Math.min(15,p.vy+0.65);
+ let oldY=p.y;
+ p.x+=p.vx;p.x=Math.max(0,Math.min(WORLD-p.w,p.x));
+ p.y+=p.vy;p.on=false;
+ for(const q of platforms){
+  const b={x:q[0],y:q[1],w:q[2],h:q[3]};
+  if(rect(p,b)&&oldY+p.h<=b.y+8&&p.vy>=0){p.y=b.y-p.h;p.vy=0;p.on=true}
+ }
+ if(p.y>H+100){lose();return}
+ for(const o of coins)if(!o.got&&Math.hypot(p.x+p.w/2-o.x,p.y+p.h/2-o.y)<34){o.got=true;score+=100}
+ for(const e of enemies){
+  if(e.dead)continue;
+  e.x+=e.d*1.15;if(e.x<=e.min){e.x=e.min;e.d=1}if(e.x>=e.max){e.x=e.max;e.d=-1}
+  const b={x:e.x,y:e.y,w:36,h:34};
+  if(rect(p,b)){
+   if(p.vy>1.5&&oldY+p.h<=e.y+12){e.dead=true;p.vy=-8;score+=250}
+   else {lose();return}
+  }
+ }
+ if(p.x>3150){state='win';score+=1000}
+ cam=Math.max(0,Math.min(WORLD-W,p.x-330));
+}
+
+function bella(px,py){
+ ctx.save();ctx.translate(Math.round(px-cam),Math.round(py));
+ if(p.vx<-.15){ctx.translate(p.w,0);ctx.scale(-1,1)}
+ ctx.fillStyle='#3b2118';ctx.fillRect(2,2,29,27);ctx.fillRect(0,7,5,15);ctx.fillRect(27,5,5,17);
+ ctx.fillStyle='#b97850';ctx.fillRect(7,8,20,19);
+ ctx.fillStyle='#ef4f9b';ctx.fillRect(3,1,28,5);ctx.fillRect(23,-2,7,7);
+ ctx.fillStyle='#dff5ff';ctx.fillRect(5,10,11,8);ctx.fillRect(19,10,11,8);
+ ctx.fillStyle='#222';ctx.fillRect(10,13,3,3);ctx.fillRect(23,13,3,3);
+ ctx.fillStyle='#111';ctx.fillRect(4,27,27,15);ctx.fillStyle='#ef4f9b';ctx.fillRect(3,42,12,4);ctx.fillRect(20,42,12,4);
+ ctx.restore();
+}
+function cloud(x,y){ctx.fillStyle='#fff';ctx.fillRect(x,y,85,18);ctx.fillRect(x+18,y-14,45,18)}
+function draw(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#58bdff');g.addColorStop(1,'#e5f8ff');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<14;i++)cloud(i*270-(cam*.18)%270,75+(i%3)*45);
+ ctx.fillStyle='#8dd36c';for(let i=0;i<10;i++){let xx=i*430-cam*.45;ctx.beginPath();ctx.arc(xx,470,150,Math.PI,0);ctx.fill()}
+ for(const q of platforms){ctx.fillStyle='#55ad4b';ctx.fillRect(q[0]-cam,q[1],q[2],14);ctx.fillStyle='#8a5a35';ctx.fillRect(q[0]-cam,q[1]+14,q[2],q[3]-14)}
+ for(const o of coins)if(!o.got){ctx.fillStyle='#ffd21f';ctx.beginPath();ctx.arc(o.x-cam,o.y,10,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff3';ctx.fillRect(o.x-cam-2,o.y-7,3,9)}
+ for(const e of enemies)if(!e.dead){ctx.fillStyle='#743b25';ctx.fillRect(e.x-cam,e.y,36,34);ctx.fillStyle='#fff';ctx.fillRect(e.x-cam+5,e.y+7,9,8);ctx.fillRect(e.x-cam+22,e.y+7,9,8);ctx.fillStyle='#111';ctx.fillRect(e.x-cam+9,e.y+10,3,3);ctx.fillRect(e.x-cam+24,e.y+10,3,3)}
+ ctx.fillStyle='#f7b733';ctx.fillRect(3165-cam,255,12,210);ctx.fillStyle='#ef4f9b';ctx.fillRect(3177-cam,265,100,52);ctx.fillStyle='#fff';ctx.font='bold 16px monospace';ctx.fillText('BEBELLA!',3184-cam,297);
+ if(inv===0||Math.floor(inv/6)%2===0)bella(p.x,p.y);
+ ctx.fillStyle='#111b';ctx.fillRect(16,16,260,54);ctx.fillStyle='#fff';ctx.font='bold 21px monospace';ctx.fillText('⭐ '+score+'    ❤️ '+lives,30,50);
+ ctx.textAlign='center';
+ if(state==='over'||state==='win'){
+  ctx.fillStyle='#111d';ctx.fillRect(190,145,580,230);ctx.fillStyle='#fff';
+  ctx.font='bold 42px monospace';ctx.fillText(state==='win'?'BEBELLA VENCEU! 🎀':'FIM DE JOGO',480,225);
+  ctx.font='22px monospace';ctx.fillText(state==='win'?'Pontuação: '+score:'Tente outra vez!',480,275);
+  ctx.font='18px monospace';ctx.fillText('Toque na tela para jogar novamente',480,325);
+ }
+ ctx.textAlign='left';
+}
 (function loop(){update();draw();requestAnimationFrame(loop)})();
-</script></body></html>
+</script>
+</body></html>
