@@ -57,7 +57,7 @@ if(state==='select'){for(let i=1;i<=5;i++){let bx=160+(i-1)*135,by=255;if(mx>=bx
 if(state==='intro')state='play';else if(state==='over')restartLevel();else if(state==='win'){if(level<5){let n=level+1;if(n>unlocked){unlocked=n;localStorage.setItem('bebellaLevel',String(unlocked))}level=n;setup();state='intro'}else state='select'}};
 function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function setup(){
-cam=0;lives=3;inv=100;shots=[];fireballs=[];checkpoint=90;boss=level===5?{x:6200,y:335,w:58,h:135,hp:12,cool:70,dead:0}:null;p.x=90;p.y=400;p.vx=p.vy=0;
+cam=0;lives=3;inv=100;shots=[];fireballs=[];checkpoint=90;boss=level===5?{x:6200,y:335,w:58,h:135,hp:12,cool:70,dead:0,vx:-2.2,baseY:335,t:0}:null;p.x=90;p.y=400;p.vx=p.vy=0;
 if(level===1){WORLD=6100;finish=5900;plats=[[-100,470,700,90],[680,470,700,90],[1460,470,650,90],[2200,470,800,90],[3090,470,700,90],[3880,470,850,90],[4820,470,1350,90],[350,380,150,20],[850,330,140,20],[1600,365,160,20],[2450,315,140,20],[3250,360,160,20],[4100,300,140,20],[5100,355,160,20]];
 }else if(level===2){WORLD=7600;finish=7380;plats=[[-100,470,620,90],[610,470,580,90],[1290,470,700,90],[2070,470,600,90],[2760,470,760,90],[3610,470,650,90],[4350,470,780,90],[5220,470,650,90],[5960,470,1600,90],[280,370,150,20],[760,310,140,20],[1420,360,160,20],[1800,290,130,20],[2250,350,160,20],[2900,300,140,20],[3700,360,170,20],[4020,285,130,20],[4550,350,160,20],[5400,305,140,20],[6150,360,160,20],[6600,290,140,20]];
 }else if(level===3){WORLD=7200;finish=7000;plats=[[-100,470,650,90],[650,470,560,90],[1320,470,650,90],[2070,470,720,90],[2900,470,600,90],[3600,470,800,90],[4510,470,650,90],[5260,470,700,90],[6060,470,1200,90],[420,370,150,20],[900,320,140,20],[1540,360,170,20],[2300,300,140,20],[3100,355,160,20],[3900,300,140,20],[4700,360,160,20],[5500,310,140,20],[6350,350,170,20]];
@@ -84,9 +84,26 @@ shots=shots.filter(s=>!s.dead&&s.x>cam-50&&s.x<cam+W+100);
 for(const f of fireballs){f.x+=f.v;f.vy+=.12;f.y+=f.vy;if(hit(p,{x:f.x,y:f.y,w:14,h:14})){f.dead=1;lose()}}fireballs=fireballs.filter(f=>!f.dead&&f.y<550&&f.x>cam-100&&f.x<cam+W+100);
 if(p.x>WORLD*.38&&checkpoint<WORLD*.38){checkpoint=WORLD*.38;tone(660,.15,.03)}if(p.x>WORLD*.72&&checkpoint<WORLD*.72){checkpoint=WORLD*.72;tone(660,.15,.03)}
 if(boss&&!boss.dead){
- if(--boss.cool<=0){boss.cool=70;fireballs.push({x:boss.x,y:boss.y+40,v:(p.x<boss.x?-5:5),vy:-1.5})}
+ boss.t+=.08;
+ // patrulha a arena e dá pequenos saltos; acelera quando perde vida
+ let rage=boss.hp<=6?1.45:1;
+ boss.x+=boss.vx*rage;
+ if(boss.x<5850){boss.x=5850;boss.vx=Math.abs(boss.vx)}
+ if(boss.x>6320){boss.x=6320;boss.vx=-Math.abs(boss.vx)}
+ boss.y=boss.baseY-Math.max(0,Math.sin(boss.t))*42;
+ // muda de direção às vezes para perseguir a Bebella
+ if(Math.floor(boss.t*10)%47===0)boss.vx=(p.x<boss.x?-1:1)*Math.abs(boss.vx);
+ if(--boss.cool<=0){
+   boss.cool=boss.hp<=6?42:65;
+   let dir=p.x<boss.x?-1:1;
+   fireballs.push({x:boss.x+29,y:boss.y+42,v:dir*(boss.hp<=6?6:5),vy:-2});
+   if(boss.hp<=6)fireballs.push({x:boss.x+29,y:boss.y+55,v:dir*4.2,vy:-4});
+ }
  if(hit(p,boss)){lose();return}
- for(const s of shots)if(!s.dead&&hit({x:s.x,y:s.y,w:12,h:8},boss)){s.dead=1;boss.hp--;tone(150,.09,.045);if(boss.hp<=0){boss.dead=1;score+=3000;tone(784,.4,.06)}}
+ for(const s of shots)if(!s.dead&&hit({x:s.x,y:s.y,w:12,h:8},boss)){
+   s.dead=1;boss.hp--;boss.vx*=-1;tone(150,.09,.045);
+   if(boss.hp<=0){boss.dead=1;score+=3000;tone(784,.4,.06)}
+ }
 }
 if(level===5&&p.x>finish&&boss&&!boss.dead){p.x=finish-30;p.vx=0}
 if(p.x>finish){state='win';localStorage.setItem('bebellaScore',score);if(level<5&&level+1>unlocked){unlocked=level+1;localStorage.setItem('bebellaLevel',String(unlocked))}tone(523,.15,.05)}
@@ -108,8 +125,24 @@ for(const s of shots){x.fillStyle='#c5a3ff';x.beginPath();x.arc(s.x-cam,s.y,7,0,
 for(const f of fireballs){x.fillStyle='#ff5a24';x.beginPath();x.arc(f.x-cam,f.y,8,0,7);x.fill();x.fillStyle='#ffd24a';x.beginPath();x.arc(f.x-cam,f.y,4,0,7);x.fill()}
 x.fillStyle='#f7b733';x.fillRect(finish-cam,260,10,210);x.fillStyle='#f04f9e';x.fillRect(finish+10-cam,270,105,48);x.fillStyle='#fff';x.font='bold 15px monospace';x.fillText(level===1?'FASE 2 →':'BEBELLA!',finish+18-cam,299);
 if(level===5){
- // vovó aguardando resgate
- x.fillStyle='#d9b18b';x.fillRect(6620-cam,382,30,34);x.fillStyle='#ddd';x.fillRect(6617-cam,372,36,15);x.fillStyle='#7b4c8e';x.fillRect(6615-cam,416,40,50);x.fillStyle='#fff';x.font='bold 13px monospace';x.fillText('VOVÓ',6608-cam,360);
+ // vovó aguardando resgate — velhinha pixel art
+ let gx=6615-cam,gy=365;
+ // balão de socorro
+ x.fillStyle='#fff';x.fillRect(gx-55,gy-58,125,34);x.fillRect(gx+5,gy-25,10,10);
+ x.fillStyle='#4b2948';x.font='bold 14px monospace';x.fillText('SOCORRO! 😭',gx-45,gy-36);
+ // cabelo grisalho
+ x.fillStyle='#e6e6e6';x.fillRect(gx+5,gy,38,12);x.fillRect(gx,gy+8,10,27);x.fillRect(gx+39,gy+8,10,27);
+ // rosto
+ x.fillStyle='#d9aa82';x.fillRect(gx+8,gy+10,34,30);
+ // óculos
+ x.fillStyle='#fff';x.fillRect(gx+10,gy+17,11,8);x.fillRect(gx+29,gy+17,11,8);x.fillStyle='#765f72';x.fillRect(gx+21,gy+20,8,2);
+ x.fillStyle='#333';x.fillRect(gx+14,gy+20,2,2);x.fillRect(gx+34,gy+20,2,2);
+ // boca assustada
+ x.fillStyle='#8e4054';x.fillRect(gx+23,gy+31,7,5);
+ // vestido, braços e pernas
+ x.fillStyle='#8b5ca8';x.fillRect(gx+5,gy+40,40,45);x.fillStyle='#d9aa82';x.fillRect(gx-2,gy+44,8,30);x.fillRect(gx+44,gy+44,8,30);
+ x.fillStyle='#f0d2b7';x.fillRect(gx+10,gy+85,9,13);x.fillRect(gx+31,gy+85,9,13);
+ x.fillStyle='#333';x.fillRect(gx+5,gy+97,16,6);x.fillRect(gx+29,gy+97,16,6);
  if(boss&&!boss.dead){x.save();x.translate(boss.x-cam,boss.y);x.fillStyle='#eee8dc';x.fillRect(0,0,58,120);x.fillStyle='#d8d0c5';for(let i=0;i<5;i++)x.fillRect(8,12+i*18,42,2);x.fillStyle='#f08a2f';x.fillRect(0,110,58,25);x.fillStyle='#2b2025';x.fillRect(12,30,10,12);x.fillRect(37,30,10,12);x.fillStyle='#9b2736';x.fillRect(17,62,25,9);x.fillStyle='#777';x.fillRect(15,-15,30,12);x.fillStyle='#aaa';x.fillRect(22,-29,22,10);x.restore();x.fillStyle='#111c';x.fillRect(610,78,310,34);x.fillStyle='#fff';x.font='bold 15px monospace';x.fillText('CIGARRO MALVADO',625,100);x.fillStyle='#e64b55';x.fillRect(760,88,145*(boss.hp/12),12)}
 }if(!inv||Math.floor(inv/6)%2===0)girl();x.fillStyle='#111b';x.fillRect(14,14,345,55);x.fillStyle='#fff';x.font='bold 19px monospace';x.fillText('FASE '+level+'   ⭐ '+score+'   ❤️ '+lives,27,49);
 x.textAlign='center';
